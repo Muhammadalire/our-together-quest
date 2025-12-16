@@ -25,17 +25,34 @@ const useUserProgress = (userName: string | null) => {
               data.dailyProgress = {};
             }
             setProgress(data);
+            // Sync to local storage for backup
+            localStorage.setItem(`userProgress_${userName}`, JSON.stringify(data));
           } else {
             initializeUser(userName);
           }
-        } else if (res.status === 404 || res.status === 400) {
-          // User not found or bad request (if name missing), create new
-          initializeUser(userName);
         } else {
-          console.error('Failed to fetch user progress');
+          console.error('Failed to fetch user progress, falling back to local storage');
+          loadFromLocalStorage(userName);
         }
       } catch (error) {
         console.error('Error fetching user progress:', error);
+        loadFromLocalStorage(userName);
+      }
+    };
+
+    const loadFromLocalStorage = (name: string) => {
+      try {
+        const item = window.localStorage.getItem(`userProgress_${name}`);
+        if (item) {
+          const parsed = JSON.parse(item);
+          if (typeof parsed.points !== 'number') parsed.points = 0;
+          setProgress(parsed);
+        } else {
+          initializeUser(name);
+        }
+      } catch (e) {
+        console.error("Local storage error", e);
+        initializeUser(name);
       }
     };
 
@@ -55,20 +72,27 @@ const useUserProgress = (userName: string | null) => {
   }, [userName]);
 
   const saveProgress = useCallback(async (newProgress: UserProgress) => {
+    // Always save to local storage first for immediate UI update and backup
+    try {
+      if (newProgress.name) {
+        window.localStorage.setItem(`userProgress_${newProgress.name}`, JSON.stringify(newProgress));
+        setProgress(newProgress);
+      }
+    } catch (e) {
+      console.error("Local storage save error", e);
+    }
+
     try {
       const res = await fetch('/api/user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newProgress),
       });
-      if (res.ok) {
-        const savedUser = await res.json();
-        setProgress(savedUser);
-      } else {
-        console.error('Failed to save progress');
+      if (!res.ok) {
+        console.error('Failed to save progress to backend');
       }
     } catch (error) {
-      console.error('Error saving progress:', error);
+      console.error('Error saving progress to backend:', error);
     }
   }, []);
 
