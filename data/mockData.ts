@@ -27,6 +27,14 @@ export const TASKS: Task[] = [
     type: TaskType.ONCE,
     duration: 1,
     points: 100,
+  },
+  {
+    id: 't6',
+    title: 'Kiss your hand three times',
+    description: 'Kiss your hand three times',
+    type: TaskType.DAILY,
+    duration: 1,
+    points: 45,
   }
 ];
 
