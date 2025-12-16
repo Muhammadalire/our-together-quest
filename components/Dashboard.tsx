@@ -92,8 +92,8 @@ const TaskItem: React.FC<{ task: Task, progress: UserProgress, onComplete: (task
 
 
 const Dashboard: React.FC<DashboardProps> = ({ userName, onLogout }) => {
-  const [userProgress, saveUserProgress] = useUserProgress(userName);
-  const { tasks, rewards, loading: dataLoading, addTask, addReward } = useAppData();
+  const [userProgress, saveProgress] = useUserProgress(userName);
+  const { tasks, rewards, loading: dataLoading, isOffline, addTask, addReward } = useAppData();
 
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
