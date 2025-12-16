@@ -54,39 +54,59 @@ export const useAppData = () => {
     }, [fetchData]);
 
     const addTask = async (task: Omit<Task, 'id'>) => {
+        const tempId = `t${Date.now()}`;
+        const newTask = { ...task, id: tempId };
+
+        // Optimistic update
+        setTasks(prev => [...prev, newTask]);
+
         try {
             const res = await fetch('/api/tasks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...task, id: `t${Date.now()}` }), // Generate ID if backend doesn't (backend schema has ID required)
+                body: JSON.stringify(newTask),
             });
             if (res.ok) {
-                const newTask = await res.json();
-                setTasks(prev => [...prev, newTask]);
+                const savedTask = await res.json();
+                // Replace temp task with saved one (though IDs should match if we send ID)
+                setTasks(prev => prev.map(t => t.id === tempId ? savedTask : t));
+                return true;
+            } else {
+                console.error("Failed to save task to backend, keeping local copy");
+                // We keep the local copy so the user sees it
                 return true;
             }
         } catch (err) {
-            console.error(err);
+            console.error("Error saving task, keeping local copy:", err);
+            return true;
         }
-        return false;
     };
 
     const addReward = async (reward: Omit<Reward, 'id'>) => {
+        const tempId = `r${Date.now()}`;
+        const newReward = { ...reward, id: tempId };
+
+        // Optimistic update
+        setRewards(prev => [...prev, newReward]);
+
         try {
             const res = await fetch('/api/rewards', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...reward, id: `r${Date.now()}` }),
+                body: JSON.stringify(newReward),
             });
             if (res.ok) {
-                const newReward = await res.json();
-                setRewards(prev => [...prev, newReward]);
+                const savedReward = await res.json();
+                setRewards(prev => prev.map(r => r.id === tempId ? savedReward : r));
+                return true;
+            } else {
+                console.error("Failed to save reward to backend, keeping local copy");
                 return true;
             }
         } catch (err) {
-            console.error(err);
+            console.error("Error saving reward, keeping local copy:", err);
+            return true;
         }
-        return false;
     };
 
     return { tasks, rewards, loading, error, addTask, addReward, refresh: fetchData };
