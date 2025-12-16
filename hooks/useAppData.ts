@@ -32,9 +32,8 @@ export const useAppData = () => {
                     console.log("DB empty, using mock data");
                     setTasks(MOCK_TASKS);
                     setRewards(MOCK_REWARDS);
-                    setIsOffline(true); // Treat empty DB as offline/demo mode for now? Or maybe just empty.
-                    // Actually, if DB is empty, we shouldn't say offline. We should just show empty or mock.
-                    // Let's say if we fallback to mock, we flag it.
+                    // Do NOT set isOffline(true) here. Empty DB is valid online state.
+                    // We just use mock data as a starter pack.
                 } else {
                     setTasks(tasksData);
                     setRewards(rewardsData);
@@ -77,6 +76,7 @@ export const useAppData = () => {
                 const savedTask = await res.json();
                 // Replace temp task with saved one (though IDs should match if we send ID)
                 setTasks(prev => prev.map(t => t.id === tempId ? savedTask : t));
+                setIsOffline(false); // We successfully talked to the backend
                 return true;
             } else {
                 console.error("Failed to save task to backend, keeping local copy");
@@ -105,6 +105,7 @@ export const useAppData = () => {
             if (res.ok) {
                 const savedReward = await res.json();
                 setRewards(prev => prev.map(r => r.id === tempId ? savedReward : r));
+                setIsOffline(false);
                 return true;
             } else {
                 console.error("Failed to save reward to backend, keeping local copy");
