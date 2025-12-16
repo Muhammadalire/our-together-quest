@@ -21,7 +21,7 @@ const isToday = (someDate: string) => {
     date.getFullYear() === today.getFullYear();
 };
 
-const Header: React.FC<{ userName: string, points: number, onOpenSync: () => void, onLogout: () => void, onTitleClick: () => void }> = ({ userName, points, onOpenSync, onLogout, onTitleClick }) => (
+const Header: React.FC<{ userName: string, points: number, isOffline: boolean, onOpenSync: () => void, onLogout: () => void, onTitleClick: () => void }> = ({ userName, points, isOffline, onOpenSync, onLogout, onTitleClick }) => (
   <header className="bg-blush/80 backdrop-blur-sm p-4 rounded-b-2xl shadow-lg sticky top-0 z-10">
     <div className="max-w-4xl mx-auto flex justify-between items-center">
       <div onClick={onTitleClick} className="cursor-pointer select-none">
@@ -29,6 +29,9 @@ const Header: React.FC<{ userName: string, points: number, onOpenSync: () => voi
         <div className="flex items-center space-x-2 text-rose-gold">
           <HeartIcon className="w-5 h-5" />
           <span className="font-bold text-lg">{points} Hearts</span>
+          {isOffline && (
+            <span className="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full ml-2">Offline Mode</span>
+          )}
         </div>
       </div>
       <div className="flex items-center space-x-2 md:space-x-4">
@@ -124,15 +127,14 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, onLogout }) => {
 
   const handleTaskCompletion = useCallback((taskId: string) => {
     if (!userProgress) return;
-
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    let newProgress = { ...userProgress, dailyProgress: { ...userProgress.dailyProgress } };
+    const newProgress = { ...userProgress, dailyProgress: { ...userProgress.dailyProgress } };
+    let taskProgress = newProgress.dailyProgress[taskId] || { currentProgress: 0, completedDates: [] };
     const todayStr = new Date().toDateString();
 
-    let taskProgress = newProgress.dailyProgress[taskId] || { currentProgress: 0, completedDates: [] };
-    if (taskProgress.completedDates.includes(todayStr)) return; // Already completed today
+    if (taskProgress.completedDates.includes(todayStr)) return;
 
     taskProgress.completedDates.push(todayStr);
 
@@ -148,8 +150,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, onLogout }) => {
     }
 
     newProgress.dailyProgress[taskId] = taskProgress;
-    saveUserProgress(newProgress);
-  }, [userProgress, saveUserProgress, tasks]);
+    saveProgress(newProgress);
+  }, [userProgress, saveProgress, tasks]);
 
   const handlePurchase = useCallback((reward: Reward) => {
     if (!userProgress) return;
@@ -157,23 +159,20 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, onLogout }) => {
       const newProgress = { ...userProgress };
       newProgress.points = (newProgress.points || 0) - reward.cost;
       newProgress.unlockedRewards = [...newProgress.unlockedRewards, reward.id];
-      saveUserProgress(newProgress);
+      saveProgress(newProgress);
     }
-  }, [userProgress, saveUserProgress]);
+  }, [userProgress, saveProgress]);
 
-  if (!userProgress || dataLoading) {
-    return (
-      <div className="min-h-screen bg-rose-gold flex items-center justify-center">
-        <p className="text-white font-serif text-2xl animate-pulse">Loading your love story...</p>
-      </div>
-    );
+  if (!userProgress) {
+    return <div className="flex items-center justify-center h-screen text-rose-gold font-serif text-2xl">Loading your love story...</div>;
   }
 
   return (
     <div className="min-h-screen bg-cream font-sans text-charcoal">
       <Header
         userName={userName}
-        points={userProgress.points || 0}
+        points={userProgress.points}
+        isOffline={isOffline}
         onOpenSync={() => setIsSyncModalOpen(true)}
         onLogout={onLogout}
         onTitleClick={handleTitleClick}

@@ -8,6 +8,8 @@ export const useAppData = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const [isOffline, setIsOffline] = useState(false);
+
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
@@ -30,9 +32,13 @@ export const useAppData = () => {
                     console.log("DB empty, using mock data");
                     setTasks(MOCK_TASKS);
                     setRewards(MOCK_REWARDS);
+                    setIsOffline(true); // Treat empty DB as offline/demo mode for now? Or maybe just empty.
+                    // Actually, if DB is empty, we shouldn't say offline. We should just show empty or mock.
+                    // Let's say if we fallback to mock, we flag it.
                 } else {
                     setTasks(tasksData);
                     setRewards(rewardsData);
+                    setIsOffline(false);
                 }
 
             } else {
@@ -44,6 +50,7 @@ export const useAppData = () => {
             setTasks(MOCK_TASKS);
             setRewards(MOCK_REWARDS);
             setError('Using offline mode');
+            setIsOffline(true);
         } finally {
             setLoading(false);
         }
@@ -109,5 +116,5 @@ export const useAppData = () => {
         }
     };
 
-    return { tasks, rewards, loading, error, addTask, addReward, refresh: fetchData };
+    return { tasks, rewards, loading, error, isOffline, addTask, addReward, refresh: fetchData };
 };
